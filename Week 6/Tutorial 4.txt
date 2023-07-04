@@ -1,0 +1,236 @@
+Tutorial 4 SQL commands
+
+Import T01.sql file into database cs2102_db
+
+1) Navigate to folder with T01.sql
+2) psql -U postgres -d cs2102_db -f T01.sql
+3) using psql shell, log in to cs2102_db or \c cs2102_db to connect to cs2102_db
+4) \d to list all created tables
+
+Q1
+
+CREATE TABLE bar(
+	a integer,
+	b integer
+);
+
+CREATE TABLE foo(
+	f integer,
+	a integer
+);
+
+INSERT INTO bar
+VALUES (1, 10), (2, 20), (3, 30), (4, 40);
+
+INSERT INTO foo
+VALUES (100, 2), (200, 7), (300, 3), (400, 2);
+
+SELECT *
+FROM bar b
+WHERE EXISTS(
+	SELECT 1
+	FROM foo f
+	WHERE f.f > 100
+	AND f.a = b.a
+);
+
+SELECT *
+FROM bar b
+WHERE EXISTS(
+	SELECT 1
+	FROM foo f
+	WHERE f.f > 100
+)AND f.a = b.a;
+
+SELECT *
+FROM bar b
+WHERE EXISTS(
+	SELECT 1
+	FROM foo f
+	WHERE f.f > 100
+	AND a = b.a
+);
+
+SELECT *
+FROM bar b
+WHERE EXISTS(
+	SELECT 1
+	FROM foo f
+	WHERE f.f > 100
+	AND a = a
+);
+
+SELECT *
+FROM bar b
+WHERE EXISTS(
+	SELECT 1
+	FROM foo f
+	WHERE f.f > 100
+	AND f.a = b.a
+	AND b > 20
+);
+
+Q2
+
+SELECT DISTINCT cname
+FROM likes L
+WHERE EXISTS(
+	SELECT 1
+	FROM sells S
+	WHERE S.rname = 'Corleone Corner'
+	AND S.pizza = L.pizza
+);
+
+EQUIVALENT
+
+SELECT DISTINCT cname
+FROM likes L, sells S
+WHERE S.pizza  = L.pizza
+AND S.rname = 'Corleone Corner';
+
+SELECT DISTINCT cname
+FROM likes L NATURAL JOIN sells S
+WHERE S.rname = 'Corleone Corner';
+
+
+
+SELECT cname
+FROM Customers C
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM Likes L, Sells S
+	WHERE S.rname = 'Corleone Corner'
+	AND S.pizza = L.pizza
+	AND C.cname = L.cname
+);
+
+EQUIVALENT
+
+(SELECT cname
+FROM Customers)
+EXCEPT
+(SELECT DISTINCT C.cname
+FROM customers C, likes L, sells S
+WHERE S.pizza  = L.pizza
+AND S.rname = 'Corleone Corner'
+AND C.cname = L.cname);
+
+
+
+SELECT DISTINCT rname
+FROM Sells
+WHERE rname <> 'Corleone Corner'
+AND price > ANY(
+	SELECT price
+	FROM Sells
+	WHERE rname = 'Corleone Corner'
+);
+
+EQUIVALENT
+
+SELECT DISTINCT S1.rname
+FROM Sells S1, Sells S2
+WHERE S1.rname <> 'Corleone Corner' 
+AND S2.rname = 'Corleone Corner'
+AND S1.price > S2.price;
+
+
+SELECT rname , pizza , price
+FROM Sells S
+WHERE price >= ALL (
+	SELECT S2.price
+	FROM Sells S2
+	WHERE S2.rname = S.rname
+	AND S2.price IS NOT NULL
+);
+
+EQUIVALENT
+
+(SELECT rname, pizza, price
+FROM Sells)
+EXCEPT
+(SELECT S1.rname, S1.pizza, S1.price
+FROM Sells S1, Sells S2
+WHERE S1.rname = S2.rname
+AND S1.price < S2.price
+AND S2.price IS NOT NULL);
+
+Q3
+
+(SELECT pizza
+FROM Likes
+WHERE cname = 'Alice')
+EXCEPT
+(SELECT pizza
+FROM Likes
+WHERE cname = 'Bob');
+
+(SELECT DISTINCT pizza
+FROM Sells)
+EXCEPT
+(SELECT DISTINCT S1.pizza
+FROM (Sells NATURAL JOIN Restaurants) S1, (Sells NATURAL JOIN Restaurants) S2
+WHERE S1.pizza = S2.pizza
+AND S1.area = S2.area
+AND S1.rname <> S2.rname);
+
+SELECT DISTINCT S1.pizza
+FROM (Sells NATURAL JOIN Restaurants) S1
+WHERE NOT EXISTS(
+	SELECT *
+	FROM (Sells NATURAL JOIN Restaurants) S2
+	WHERE S1.pizza = S2.pizza
+	AND S1.area = S2.area
+	AND S1.rname <> S2.rname);
+
+
+SELECT DISTINCT S1.area, S1.pizza, S1.price
+FROM (Sells NATURAL JOIN Restaurants) S1
+WHERE price <= ALL (SELECT S2.price
+		FROM (Sells NATURAL JOIN Restaurants) S2
+		WHERE S1.area = S2.area
+		AND S1.pizza = S2.pizza);
+
+SELECT DISTINCT S1.area, S1.pizza, S1.price
+FROM (Sells NATURAL JOIN Restaurants) S1
+WHERE price >= ALL (SELECT S2.price
+		FROM (Sells NATURAL JOIN Restaurants) S2
+		WHERE S1.area = S2.area
+		AND S1.pizza = S2.pizza);
+
+SELECT *
+FROM (SELECT DISTINCT S1.area, S1.pizza, S1.price AS pmin
+	FROM (Sells NATURAL JOIN Restaurants) S1
+	WHERE price <= ALL (SELECT S2.price
+		FROM (Sells NATURAL JOIN Restaurants) S2
+		WHERE S1.area = S2.area
+		AND S1.pizza = S2.pizza)) S3
+NATURAL JOIN
+(SELECT DISTINCT S1.area, S1.pizza, S1.price AS pmax
+	FROM (Sells NATURAL JOIN Restaurants) S1
+	WHERE price >= ALL (SELECT S2.price
+		FROM (Sells NATURAL JOIN Restaurants) S2
+		WHERE S1.area = S2.area
+		AND S1.pizza = S2.pizza)) S4;
+
+Q4
+SELECT DISTINCT S.rname
+FROM Sells S JOIN Restaurants R
+ON S.rname = R.rname AND R.area = 'East';
+
+
+SELECT DISTINCT S.rname
+FROM Sells S, Restaurants R
+WHERE S.rname = R.rname
+AND R.area = 'East';
+
+
+Q6
+
+UPDATE Employees
+SET office_id = (SELECT office_id
+		FROM Offices
+		WHERE building = 'Tower1'
+		AND room_number = 11
+		AND level = 5)
+WHERE office_id = 123;

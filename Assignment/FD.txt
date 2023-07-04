@@ -1,0 +1,74 @@
+1.
+{a,d} -> {c,d}	[Given]
+{b,c} -> {a,c}	[Given]
+{c,e} -> {a,b}	[Given]
+{c,d} -> {d,e}	[Given]
+compute keys of {a,b,c,d,e}
+compute superkeys of {a,b,c,d,e}
+compute prime attributes of {a,b,c,d,e}
+
+2.
+{a,b} -> {c}	[Given]
+{b,c} -> {d}	[Given]
+{c,d} -> {e}	[Given]
+{d,e} -> {a}	[Given]
+{a,e} -> {b}	[Given]
+compute keys of {a,b,c,d,e}
+compute superkeys of {a,b,c,d,e}
+compute prime attributes of {a,b,c,d,e}
+
+4.
+a)
+{a,b,d} -> {e}  	[Given]
+{a,c,e} -> {a,d}	[Given]
+{b,d}   -> {e}  	[Given]
+{c,d}   -> {b,e}	[Given]
+{c,e}   -> {b,d}	[Given]
+compute keys of {a,b,c,d,e}
+compute superkeys of {a,b,c,d,e}
+compute prime attributes of {a,b,c,d,e}
+
+K({A,B,C,D,E}) = {A,C,D}, {A,C,E}
+
+http://functionaldependencycalculator.ml/
+R{A,B,C,D,E}
+ABD->E,ACE->AD,BD->E,CD->BE,CE->BD
+
+b)
+{a,b,d} -> {e}  	[Given]
+{a,c,e} -> {a,d}	[Given]
+{b,d}   -> {e}  	[Given]
+{c,d}   -> {b,e}	[Given]
+{c,e}   -> {b,d}	[Given]
+compute closure of {c,d}
+compute closure of {c}
+compute closure of {d}
+compute closure of {a,c}
+compute closure of {a,d}
+
+{R1(B,D,E), R2(A,B,D), R3(B,C,D), R4(A,C,D)}
+
+c)
+
+{B,D} -> {E}
+{C,D} -> {E}
+{C,E} -> {B}
+{C,E} -> {D}
+
+d)
+
+{R1(B,C,D,E), R2(A,C,D)}
+R3(B,D,E)//redundant?
+R4(C,D,E)//redundant?
+
+e) 
+
+3NF dependency preserving
+{b,d} -> {e}  	[Given]
+{c,d} -> {b,e}	[Given]
+{c,e} -> {b,d}	[Given]
+compute closure of {a,b,d}
+compute closure of {a,c,e}
+compute closure of {b,d}
+compute closure of {c,d}
+compute closure of {c,e}

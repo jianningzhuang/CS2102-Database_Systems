@@ -1,0 +1,103 @@
+Tutorial 5
+
+Q1
+
+For each pizza, find restaurant that sells it at highest price
+SELECT S1.rname, S1.pizza, S1.price
+FROM Sells S1
+WHERE NOT EXISTS(SELECT 1
+		FROM Sells S2
+		WHERE S1.pizza = S2.pizza AND S2.price > S1.price);
+
+SELECT S1.rname, S1.pizza, S1.price
+FROM Sells S1
+WHERE price >= ALL(SELECT S2.price
+		FROM Sells S2
+		WHERE S1.pizza = S2.pizza);
+
+Find restaurant that sells highest price pizza
+SELECT S1.rname, S1.pizza, S1.price
+FROM Sells S1
+WHERE NOT EXISTS(SELECT 1
+		FROM Sells S2
+		WHERE S2.price > S1.price);
+
+Q2
+
+SELECT R1.rname, R2.rname
+FROM Restaurants R1, Restaurants R2
+WHERE ( SELECT MAX(price) FROM Sells WHERE rname = R1.rname )
+> ( SELECT MAX(price) FROM Sells WHERE rname = R2.rname );
+
+
+WITH MaxPrice AS (
+SELECT rname, (SELECT MAX(price) FROM Sells WHERE rname = R.rname) AS maxP
+FROM Restaurants R
+)
+SELECT R1.rname, R2.rname, R1.maxP, R2.maxP FROM MaxPrice R1, MaxPrice R2 WHERE R1.maxP > R2.maxP;
+
+SELECT rname, MAX(price) AS maxP
+FROM Sells
+GROUP BY rname;
+Q3
+
+WITH AVGPrice AS(
+	SELECT rname, (SELECT AVG(price) FROM Sells WHERE rname = R.rname) as avgP
+	FROM Restaurants R
+)
+SELECT R1.rname, R1.avgP 
+FROM AVGPrice R1
+WHERE avgP > 22;
+
+WITH RestaurantAvgPrice AS
+( SELECT rname, AVG(price) AS avgPrice FROM Sells GROUP BY rname )
+SELECT * FROM RestaurantAvgPrice WHERE avgPrice > 22;
+
+SELECT R1.rname
+FROM Restaurants R1
+WHERE (SELECT AVG(price) FROM Sells WHERE rname = R1.rname) > 22;
+
+
+Q4
+
+WITH TotalP AS(
+	SELECT rname, SUM(price) AS sumP
+	FROM Sells
+	GROUP BY rname
+)
+SELECT T1.rname, T1.sumP
+FROM TotalP T1
+WHERE T1.sumP > (SELECT AVG(sumP) FROM TotalP T2);
+
+Q5
+
+SELECT C1.cname, C2.cname
+FROM Customers C1, Customers C2 WHERE C1.cname < C2.cname
+AND EXISTS ( SELECT 1 FROM Likes WHERE cname = C1.cname )
+AND NOT EXISTS (
+SELECT 1 FROM Likes L1
+WHERE cname = C1.cname
+AND NOT EXISTS ( SELECT 1 FROM Likes L2
+WHERE cname = C2.cname AND pizza = L1.pizza )
+)
+AND NOT EXISTS (
+SELECT 1 FROM Likes L2
+WHERE cname = C2.cname
+AND NOT EXISTS ( SELECT 1 FROM Likes L1
+WHERE cname = C1.cname AND pizza = L2.pizza )
+);
+
+FROM Likes L1
+WHERE NOT EXISTS (SELECT 1
+		FROM Likes L2
+		WHERE L1.pizza <> L2.pizza
+
+
+Q6
+
+UPDATE Sells S
+SET price = CASE (SELECT area FROM Restaurants WHERE rname = S.rname)
+		WHEN "Central" THEN price + 3
+		WHEN "East" THEN price + 2
+		ELSE price + 1
+	     END;

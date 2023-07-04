@@ -1,0 +1,168 @@
+All other supersets of {A} cannot be keys since they contain/must be proper supersets of either AB or AC 
+which are minimal keys. 
+Hence, there are only two keys.
+
+
+A is key for R
+
+NTD FD B->C violates BCNF since LHS B is not superkey of R. R does not satisfy BCNF
+closure of B+ contains more but not all attributes of R
+
+BCNF => any attribute B can only depend on superkeys
+Else, same LHS can appear multiple times in table => B appears multiple times => redundancy
+
+For decomposition, find an FD A->A+ that violates BCNF (A+ is more but not all)
+
+BCNF decomposition of a table may not be unique
+any violating FD can be used for decomposition
+
+2 attributes must be in BCNF
+if no FDs, all closure is trivial e.g A+ = A, B+ = B, AB+ = AB
+if FD, closure will be superkey e.g A->B  then A+ = AB, A is superkey so BCNF
+
+FD has attributes across multiple tables => compute closure and remove irrelevant attributes/not in table
+
+Each BCNF decomposition removes at least 1 BCNF violation. Termination when 2 attributes in table or no more violations recursively
+Will not add new violations
+
+Split => A->A+ superkey in R1, A->A+ not in projection(irrelevant removed) in R2
+
+lossless join if common attributes in R1 and R2 is a superkey of R1 or R2
+lossless join done pairwise => common attribute between 2 tables at a time
+
+BCNF always lossless join since split by violating closure ensures closure is superkey in one of the table
+
+
+(1) {E}+ = {BDE}, so E->BD violates BCNF of R.
+(2) Decompose R into R1(BDE) and R2(ACE).
+(3) R1 is in BCNF because the only non-trivial functional dependency is E->BD and E is the key of R1.
+(4) {A}+ = {ABDE}, when projected to R2 we have {A}+ = {AE} on R2, so A->E violates BCNF of R2.
+(5) We decompose R2 into R3(AE) and R4(AC).
+(6) Both R3 and R4 are in BCNF since they only have 2 attributes
+The final BCNF decomposition is: R1(BDE),R3(AE),R4(AC).
+
+
+3. R1 is in BCNF:
+• {B}+ = {BCDE}, B is a key of R1.
+• {C}+ = {BCDE}, C is a key of R1.
+• {D}+ = {D}, this is trivial.
+• {E}+ = {E}, this is trivial.
+• {DE}+ = {DE}, this is trivial.
+• Any other sets of attributes are superkeys since they are superset of either B or C.
+4. R2 is in BCNF trivially.
+
+
+
+Dependency is not preserved if some original FD cannot be derived from FDs on decomposed tables
+BCNF may not preserve dependencies
+
+To check for dependency preservation
+(1) Derive FDs on decomposed tables
+(2) For each original FD, compute closure with respect to set of decomposed FDs
+(3) IF RHS in closure, dependency is preserved
+(4) vice versa from decomposed FDs to original FDs
+
+OR check original set of FDs equivalent to set of FDs on decomposed tables 
+
+F1 equivalent to F2 iff (1)every FD in F1 can be derived from F2 and (2) every FD in F2 can be derived from F1
+
+Prove that F1 can be derived from F2
+(1) A->B and D->E can be derived easily using decomposition rule
+(2) {AB}+ = {ABC} so AB->C is implied by F2
+(3) {D}+= {ABCDE} so D->AC is implied by F2
+
+Example
+(1) FDs on R1 => AB->C
+    FDs on R2 => E->AB
+    Let F1 = {set of decomposed FDs)
+    F1 can be derived from F by decomposition
+(2) Prove F can be derived from F1
+    closure 
+(3) Hence, F equivalent to F1 => dependency preserving decomposition 
+
+
+3NF Check
+
+(1) NTD FDs
+(2) Find Keys and Prime Attributes
+(3) check LHS superkey or RHS prime attribute
+
+IF prime attributes is all attributes, R already satisfy 3NF
+
+3NF more lenient than BCNF
+satisfy BCNF => satisfy 3NF
+violate 3NF => violate BCNF
+
+Minimal Basis
+(1) Fb equivalent to original F 
+(2) Non-Trivial Decomposed
+(3) No redundant attributes in LHS
+(4) No redundant FDs
+
+redundant attribute => conside AB->C, if remove B from LHS and {A}+ still contains C, B is redundant
+redundant FD => remove BC->D, if {BC}+ still contains D without BC->D, redundant
+
+removing redundant attributes/FDs do not always give unique solution
+
+add key during 3NF decomposition to ensure lossless join
+3NF is dependency preserving
+
+{A}+ = 
+{B}+ =
+{C}+ = 
+{AB}+ = 
+{AC}+ =
+{BC}+ = 
+{ABC}+ = 
+
+
+{A}+ = 
+{B}+ =
+{C}+ = 
+{D}+ =
+{AB}+ = 
+{AC}+ =
+{AD}+ = 
+{BC}+ = 
+{BD}+ =
+{CD}+ =
+{ABC}+ = 
+{ABD}+ =
+{ACD}+ = 
+{BCD}+ =
+{ABCD}+ = 
+
+{A}+ = 
+{B}+ =
+{C}+ = 
+{D}+ =
+{E}+ = 
+{AB}+ = 
+{AC}+ =
+{AD}+ = 
+{AE}+ = 
+{BC}+ = 
+{BD}+ =
+{BE}+ = 
+{CD}+ =
+{CE}+ = 
+{DE}+ = 
+{ABC}+ = 
+{ABD}+ =
+{ABE}+ =
+{ACD}+ =
+{ACE}+ =
+{ADE}+ = 
+{BCD}+ =
+{BCE}+ =
+{BDE}+ =
+{CDE}+ =
+{ABCD}+ = 
+{ABCE}+ = 
+{ABDE}+ = 
+{ACDE}+ = 
+{BCDE}+ =
+{ABCDE}+ =  
+
+
+

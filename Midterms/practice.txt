@@ -1,0 +1,409 @@
+
+
+For all cities, find their names together with the names of the countries they are located in.
+
+SELECT c.name, n.name
+FROM Cities AS c, Countries AS n
+WHERE c.country_iso2 = n.iso2 and c.name LIKE 'Si%re';
+
+SELECT c.name AS city, n.name AS country
+FROM Cities AS c JOIN Countries AS n
+ON c.country_iso2 = n.iso2;
+
+-----------------------------------------------------------------------------------------
+
+Find all codes of countries that have no land border with another country.
+
+SELECT country1_iso2 AS code
+FROM borders
+WHERE country2_iso2 IS NULL;
+
+-----------------------------------------------------------------------------------------
+Find all names that refer to both a city and a country.
+
+SELECT DISTINCT c.name
+FROM Cities AS c, Countries AS n
+WHERE c.name = n.name;
+
+(SELECT name FROM Cities)
+INTERSECT
+(SELECT name FROM Countries);
+
+-----------------------------------------------------------------------------------------
+Find the all the countries for which there is not city in the database.
+
+SELECT n.name
+FROM Countries AS n LEFT OUTER JOIN Cities AS c
+ON n.iso2 = c.country_iso2
+WHERE c.country_iso2 IS NULL;
+
+-----------------------------------------------------------------------------------------
+
+Find all airports in European countries without a land border which
+cannot be reached by plane given the existing routes in the database.
+
+SELECT t1.country, t1.city, t1.airport
+FROM
+(SELECT n.name AS country, c.name AS city, a.name AS airport, a.code
+FROM borders b, countries n, cities c, airports a
+WHERE b.country1_iso2 = n.iso2
+AND n.iso2 = c.country_iso2
+AND c.name = a.city
+AND b.country2_iso2 IS NULL
+AND n.continent = 'Europe') t1
+LEFT OUTER JOIN
+routes r
+ON t1.code = r.to_code
+WHERE r.to_code IS NULL;
+
+
+
+-----------------------------------------------------------------------------------------
+For each continent, find the country with the highest GDP.
+
+SELECT c1.name, c1.continent, c1.gdp
+FROM Countries c1
+WHERE c1.gdp >= ALL (SELECT gdp
+		FROM Countries c2
+		WHERE c1.continent = c2.continent);
+
+-----------------------------------------------------------------------------------------
+
+Find all cities that are located in a country with a country population smaller than the population
+of all cities called "London" (there are actually 4 cities called "London" on the database).
+
+SELECT c.name, n.name, n.population
+FROM Cities c, Countries n
+WHERE c.country_iso2 = n.iso2
+AND n.population < ALL (SELECT population
+			FROM Cities
+			WHERE name = 'London');
+
+
+
+
+-----------------------------------------------------------------------------------------
+
+Find all the airports in Singapore.
+
+SELECT a.name, a.city, n.name
+FROM Airports a, Cities c, Countries n
+WHERE a.city = c.name AND c.country_iso2 = n.iso2 AND n.name = 'Singapore';
+
+-----------------------------------------------------------------------------------------
+
+Find all routes that are served by more than 12 airlines.
+
+SELECT from_code, to_code, COUNT(*) AS num_airlines
+FROM routes
+GROUP BY from_code, to_code
+HAVING COUNT(*) > 12;
+
+-----------------------------------------------------------------------------------------
+
+Find all countries that have at least one city with a population size
+large than the average population size of all European countries
+
+SELECT DISTINCT n.name
+FROM Countries n, Cities c
+WHERE c.country_iso2 = n.iso2 
+AND c.population > (SELECT AVG(population)
+FROM Countries
+WHERE continent = 'Europe');
+
+
+-----------------------------------------------------------------------------------------
+Find the names of all users that have visited all countries.
+
+SELECT user_id, name
+FROM users u
+WHERE NOT EXISTS (SELECT n.iso2
+		FROM countries n
+		WHERE NOT EXISTS (SELECT 1
+				FROM visited v
+				WHERE v.iso2 = n.iso2
+				AND v.user_id = u.user_id)
+);
+
+countries a user has not visited
+
+SELECT n.iso2
+FROM Countries n LEFT OUTER JOIN Visited v
+ON n.iso2 = v.iso2 AND v.user_id = '101'
+WHERE v.iso2 IS NULL;
+
+if countries not visited = 0, you have visited all countries
+
+SELECT user_id, name
+FROM users u
+WHERE NOT EXISTS(
+SELECT n.iso2
+FROM Countries n LEFT OUTER JOIN Visited v
+ON n.iso2 = v.iso2 AND v.user_id = u.user_id
+WHERE v.iso2 IS NULL);
+
+-----------------------------------------------------------------------------------------
+
+Find all airports that can be reached from SIN non-stop.
+
+SELECT c.to_code, a.name
+FROM Connections c, Airports a
+WHERE c.from_code = 'SIN' AND c.to_code = a.code;
+
+-----------------------------------------------------------------------------------------
+WITH RECURSIVE flight_path AS (
+SELECT from_code, to_code, 0 AS stops
+FROM connections
+WHERE from_code = 'SIN'
+UNION ALL
+SELECT c.from_code, c.to_code, p.stops+1
+FROM flight_path p, connections c
+WHERE p.to_code = c.from_code
+AND p.stops <= 2
+)
+SELECT DISTINCT to_code, stops
+FROM flight_path
+ORDER BY stops ASC;
+-----------------------------------------------------------------------------------------
+
+
+WITH RECURSIVE flight_path AS (
+SELECT from_code, to_code, 0 AS stops
+FROM connections
+WHERE from_code = 'SIN'
+UNION ALL
+SELECT c.from_code, c.to_code, p.stops+1
+FROM flight_path p, connections c
+WHERE p.to_code = c.from_code
+AND p.stops <= 2
+)
+SELECT DISTINCT to_code, stops
+FROM flight_path
+ORDER BY stops ASC;
+-----------------------------------------------------------------------------------------
+50
+WITH RECURSIVE flight_path (airport_codes, stops, is_visited) AS (
+SELECT
+ARRAY[from_code, to_code],
+0 AS stops,
+from_code = to_code
+FROM connections
+WHERE from_code = 'SIN'
+UNION ALL
+SELECT
+(airport_codes || to_code)::char(3)[],
+p.stops + 1,
+c.to_code = ANY(p.airport_codes)
+FROM
+connections c,
+flight_path p
+WHERE p.airport_codes[ARRAY_LENGTH(airport_codes, 1)] = c.from_code
+AND NOT p.is_visited
+AND p.stops < 2
+)
+SELECT DISTINCT airport_codes, stops
+FROM flight_path
+ORDER BY stops;
+-----------------------------------------------------------------------------------------
+
+A query that has no GROUP BY clause cannot have both aggregate function and non-aggregate 
+attribute in the SELECT clause.
+
+-----------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------
+
+SELECT A1.value, A2.value
+FROM (SELECT row, value FROM Simulator WHERE tname = 't1' AND col = 'a1') A1,
+	(SELECT row, value FROM Simulator WHERE tname = 't1' AND col = 'a2') A2
+WHERE A1.row = A2.row
+AND A1.value > '25';
+
+
+SELECT *
+FROM (SELECT A1.value AS a1, A2.value AS a2
+FROM (SELECT row, value FROM Simulator WHERE tname = 't1' AND col = 'a1') A1,
+	(SELECT row, value FROM Simulator WHERE tname = 't1' AND col = 'a2') A2
+WHERE A1.row = A2.row) t1,
+(SELECT B1.value AS b1, B2.value AS b2, B3.value AS b3
+FROM (SELECT row, value FROM Simulator WHERE tname = 't2' AND col = 'b1') B1,
+(SELECT row, value FROM Simulator WHERE tname = 't2' AND col = 'b2') B2,
+(SELECT row, value FROM Simulator WHERE tname = 't2' AND col = 'b3') B3
+WHERE B1.row = B2.row AND B1.row = B3.row) t2
+WHERE t1.a1 = t2.b2;
+
+
+
+
+CREATE VIEW v1 (eid) AS
+SELECT DISTINCT e.eid
+FROM Engineers e, Works w
+WHERE e.eid = w.eid AND w.hours > 10;
+
+
+CREATE VIEW v2 (eid) AS
+SELECT DISTINCT e.eid
+FROM Employees e, Specializes s
+WHERE e.eid = s.eid AND w.aid = 'A' AND w.aid IN ('B', 'C');
+
+CREATE VIEW v3 (eid) AS
+SELECT e.eid
+FROM Employees e, Departments d, Offices o
+WHERE e.eid = d.eid AND d.oid = o.oid AND o.address = 'A';
+
+
+CREATE VIEW v4 (eid) AS
+SELECT m.eid
+FROM Managers m LEFT OUTER JOIN Projects p
+ON m.eid = p.eid
+WHERE p.eid IS NULL;
+
+
+CREATE VIEW v5 (eid) AS
+SELECT DISTINCT w1.eid
+FROM Works w1
+WHERE NOT EXISTS (SELECT 1
+		FROM Works w2
+		WHERE w2.eid = w1.eid AND w2.hours > 1);
+
+
+
+CREATE VIEW v6 (eid, num) AS
+SELECT e.eid, CASE
+		WHEN e.eid IN (SELECT eid FROM Managers) THEN (SELECT COUNT(*) FROM Departments WHERE eid = e.eid)
+		WHEN e.eid IN (SELECT eid FROM Engineers) THEN (SELECT COUNT(*) FROM Works WHERE eid = e.eid)
+		ELSE 0
+		END AS num
+FROM Employees e;
+
+
+
+CREATE VIEW v7 (pid, eid, eid2) AS
+SELECT W.pid, w1.eid, w2.eid
+FROM Works w1, Works w2,
+(SELECT w.pid
+FROM Works w
+GROUP BY w.pid
+HAVING COUNT(*) = 2;) W
+WHERE W.pid = w1.pid AND W.pid = w2.pid AND w1.eid < w2.eid;
+
+create view v8 (aid, num) as
+select A.aid, count(distinct E.did)
+from Areas A left outer join
+(Specializes S join Employees E on S.eid = E.eid)
+on A.aid = S.aid
+group by A.aid
+
+create view v9 (aid, num) as
+SELECT w.pid
+FROM Works w
+GROUP BY w.pid
+HAVING COUNT(w.eid) > SELECT COUNT(e1.eid)
+FROM Employees e1
+WHERE e1.did = (SELECT e2.did
+		FROM Projects p1, Employees e2
+		WHERE p1.eid = e2.eid AND p1.p id = w.pid);
+
+SELECT b.pouname, b.ctuname
+FROM Bid b
+WHERE NOT EXISTS
+(SELECT 1
+FROM Availability a
+WHERE b.ctuname = a.uname AND NOT EXISTS (SELECT 1
+		FROM Bid b1
+		WHERE a.uname = b1.ctuname 
+		AND b.pouname = b1.pouname));
+
+
+
+
+
+
+CREATE OR REPLACE VIEW q1 (country_name) AS
+SELECT name
+FROM Countries
+WHERE continent = 'Africa' AND population > 100000000;
+
+
+
+SELECT c1.country_iso2
+FROM Cities c1, Airports a
+WHERE 
+
+
+CREATE OR REPLACE VIEW q2 (continent, country_count) AS
+SELECT c.continent, COUNT(*)
+FROM Countries c
+WHERE NOT EXISTS (SELECT 1
+		FROM Airports a
+		WHERE c.iso2 = a.country_iso2)
+GROUP BY c.continent;
+
+SELECT c.continent, COUNT(*)
+FROM Countries c LEFT JOIN Airports a
+ON c.iso2 = a.country_iso2
+WHERE a.country_iso2 IS NULL
+GROUP BY c.continent;
+
+
+CREATE OR REPLACE VIEW q3 (country_name, border_count) AS
+SELECT c.name, COUNT(DISTINCT b.country2_iso2)
+FROM Borders b, Countries c
+WHERE b.country1_iso2 = c.iso2 AND b.country2_iso2 IS NOT NULL
+GROUP BY c.iso2
+ORDER BY COUNT(DISTINCT b.country2_iso2) DESC
+LIMIT 10;
+
+CREATE OR REPLACE VIEW q4 (country_name1, country_name2) AS
+SELECT c1.name, c2.name
+FROM Borders b, Countries c1, Countries c2
+WHERE b.country1_iso2 = c1.iso2 AND b.country2_iso2 = c2.iso2
+AND c1.continent = 'Europe' AND c2.continent = 'Asia';
+
+CREATE OR REPLACE VIEW q5 (country_name) AS
+SELECT co.name
+FROM Countries co, Cities ci, Airports a, Routes r,  
+WHERE co.iso2 = ci.country_iso2 AND ci.name = a.city AND r.from_code = 'SQ
+AND c1.continent = 'Europe' AND c2.continent = 'Asia';
+
+CREATE OR REPLACE VIEW q5 (country_name) AS
+(SELECT DISTINCT c.name
+FROM (
+SELECT DISTINCT to_code
+FROM Routes
+EXCEPT
+SELECT DISTINCT r.to_code
+FROM Routes r
+WHERE r.airline_code = 'SQ') N, Airports a, Countries c
+WHERE N.to_code = a.code AND a.country_iso2 = c.iso2 AND c.continent = 'Asia')
+UNION
+(SELECT DISTINCT c1.name
+FROM Countries c1
+WHERE NOT EXISTS (SELECT 1
+FROM Airports a1
+WHERE a1.country_iso2 = c1.iso2));
+
+
+CREATE OR REPLACE VIEW q6 (country_name) AS
+SELECT DISTINCT name
+FROM Countries
+WHERE continent = 'Asia'
+EXCEPT
+SELECT DISTINCT c.name
+FROM Routes r, Airports a, Countries c
+WHERE r.airline_code = 'SQ' AND r.to_code = a.code AND a.country_iso2 = c.iso2 AND c.continent = 'Asia'
+UNION
+(SELECT DISTINCT c1.name
+FROM Countries c1
+WHERE c1.continent = 'Asia'
+AND NOT EXISTS (SELECT 1
+FROM Airports a1
+WHERE a1.country_iso2 = c1.iso2));
+
+
+SELECT DISTINCT to_code
+FROM Routes
+WHERE airline_code = 'SQ';
+

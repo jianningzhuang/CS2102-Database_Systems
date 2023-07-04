@@ -1,0 +1,36 @@
+{a}   -> {b}  	[Given]
+{b,c} -> {d}  	[Given]
+{a,c} -> {b,c}	[Augmentation (1) with {c}]
+{a,c} -> {d}  	[Transitivity (3) and (2)]
+{a,c} -> {d}  	[QED]
+
+
+{a}   -> {b}  	[Given]
+{c}   -> {d}  	[Given]
+{a,c} -> {b,c}	[Augmentation (1) with {c}]
+{b,c} -> {b,d}	[Augmentation (2) with {b}]
+{a,c} -> {b,d}	[Transitivity (3) and (4)]
+{a,c} -> {b,d}	[QED]
+
+
+{a,b,c} -> {e}    	[Given]
+{b,d}   -> {a}    	[Given]
+{c,g}   -> {b}    	[Given]
+{c,d,g} -> {b,d}  	[Augmentation (3) with {d}]
+{c,d,g} -> {b,c,d}	[Augmentation (4) with {c}]
+{b,c,d} -> {a,c}  	[Augmentation (2) with {c}]
+{b,c,d} -> {a,b,c}	[Augmentation (6) with {b}]
+{c,d,g} -> {a,b,c}	[Transitivity (5) and (7)]
+{c,d,g} -> {e}    	[Transitivity (8) and (1)]
+{c,d,g} -> {e}    	[QED]
+
+
+{a}   -> {b}  	[Given]
+{d}   -> {c}  	[Given]
+{a,d} -> {b,d}	[Augmentation (1) with {d}]
+{b,d} -> {b,c}	[Augmentation (2) with {b}]
+{a,d} -> {b,c}	[Transitivity (3) and (4)]
+{a,d} -> {b,c}	[QED]
+
+compute closure of {c,d}
+compute keys of {a,b,c,d,e,g}

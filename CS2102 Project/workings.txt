@@ -1,0 +1,38 @@
+CREATE OR REPLACE PROCEDURE add_room (IN room_number INTEGER, IN floor_number INTEGER, IN room_name VARCHAR(255), IN dept_id INTEGER, IN room_capacity INTEGER)
+AS $$
+
+  INSERT INTO MeetingRooms
+  VALUES (room_number, floor_number, room_name, dept_id);
+  
+  
+
+$$ LANGUAGE sql
+
+DROP TABLE Joins;
+DROP TABLE Sessions;
+DROP TABLE Updates;
+DROP TABLE Juniors;
+DROP TABLE Seniors;
+DROP TABLE Managers;
+DROP TABLE Bookers;
+DROP TABLE HealthDeclarations;
+DROP TABLE Employees;
+DROP TABLE MeetingRooms;
+DROP TABLE Departments;
+
+INSERT INTO MeetingRooms
+VALUES (1, 1, 'jianning room', 102);
+
+INSERT INTO MeetingRooms
+VALUES (1, 2, 'vikas room', 102);
+
+INSERT INTO Updates
+VALUES (1001, 1, 1, '2021-10-11', 1000), (1001, 1, 1, '2021-10-10', 1001), (1001, 1, 1, '2021-10-9', 999);
+
+INSERT INTO Updates
+VALUES (1001, 1, 2, '2021-10-11', 2000), (1001, 1, 2, '2021-10-10', 2001), (1001, 1, 2, '2021-10-9', 1999);
+
+SELECT * FROM current_capacity('2021-10-16');
+
+INSERT INTO Sessions
+VALUES (1, 2, 1, '2021-10-10', 1001, 1001);

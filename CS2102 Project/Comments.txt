@@ -1,0 +1,81 @@
+Notes on Comments:
+- Notations used to differentiate word and elements of ER diagram:
+  <relationship set>
+  [entity set]
+  [<aggregate>]
+  [[weak entity set]]
+  <<identifying relationship set>>
+  {attributes}
+  {{composite attributes}}
+  
+- Sometimes, connections are displayed to be clearer (e.g., [Employee] -- <makes>).  There are 4 different kinds of connections:
+  ---   unconstrained
+  -->   key constraint
+  ===   total participation constraint
+  ==>   key and total participation constraint
+
+- I may have missed some comments from below on your group comments, but please do note.  The main comments regarding a fatal error (e.g., ternary relationship on booking with senior and manager) should be caught.
+
+- Some major fatal error carry a small 0.5% deductions since the main learning point is the expose you to construct ER model.  Many major comments may be reasonable with more justifications so they are more of a major inconveniences or simple "typo" on the misuse of arrows and are not penalised.
+
+- Misuse of ER diagram elements are penalised 0.5% as well.  These includes (1) aggregates box touching its diamond shape, (2) arrow in the wrong direction, (3) lines touching the wrong part of aggregate (attributes should touch diamond since first and foremost an aggregate is a relationship set and we simply make double use of it as an entity set), etc.  Again, only major misuse are penalised and not minor ones like not identifying certain attributes as derived attributes since these can be justified as well.  Double-line arrow (i.e., key+total) being replaced by a thick arrow is fine, as it is still identifiable and as long as they are used consistently.
+
+
+
+
+Main Learning Points:
+- The point of this ER design is to think about the constraints in term of "real-world" model.  The project is grounded on a simplified version of a real project that is being done on several companies.
+
+- While there are many possible solutions depending on "real-world" assumptions, certain problems are rather fatal.  For instance, the following common major comments:
+  (1) This is a wrong use of ternary relationship set.  Any n-ary relationship set requires all n entity sets to be related.  Consider a relationship "less than" (denoted by <).  We cannot say if "1 is less than" (denoted by 1<) but we have to say "1 is less than 2" (denoted by 1<2).  A similar notation is to use it like a function: <(1,2).
+  A ternary relationship set is harder to visualise but you can imagine a +< to be a relationship such that when written as a+b<c, the meaning is "a plus b is less than c".  Now we have relate three values (all from the set integer).  A similar notation will be +<(a,b,c).
+  Consider a "booking" relation.  It has a typical use of "a is booking b" where a comes from the set of eligible employees and b comes from the set of eligible meeting rooms.  Writing this as the other notation, we require booking(a,b) to be expressible.  But if it is a ternary relation, then we need it to be booking(a,b,c) while the intended meaning was booking(a,b).
+  (2) Violates our basic requirement that a meeting room can only be booked by a single group.  In general, adding extraneous ID regardless of how it is implemented will lead to this complication and requires additional checking to ensure the database are consistent.
+  Additionally, it adds "burden" to the user:
+    a) The user has to supply the booking ID when booking
+    b) If the booking ID is auto generated, then to join the meeting, the people joining has to know the specific booking ID
+    c) If the specific booking ID can be automatically retrieved from the date and time, then booking ID is indeed extraneous and can be deleted safely as it only adds the problem of consistency and not adding much value here
+
+
+
+
+Common Minor Comments:
+0. This is very important especially for final report.  Make the ER diagram large.  Make sure that font inside the entity/relationship set is as large as the font used on the text of the report.  Unfortunately, with age, my eyesight is not as good as before.
+
+1. Setting capacity need not be a relationship set.  It is good to have (e.g., we can know the current maximum capacity by looking at the latest date) but can simply be an attribute on meeting rooms.  If used, the relationship set should at least capture two attributes:
+  a) The date when the update is made (which should be made into partial key, otherwise problem (b) below applies)
+  b) The updated capacity
+Even then, there may be several problems:
+  a) If coupled with capacity attribute on meeting room, need to ensure that the capacity is correct (i.e., the latest value when adding entries to the relationship set for that room).
+  b) A manager can only update the capacity of a meeting room exactly once.  Either that or if the same manager updates the same meeting room again, it is an update on the date attribute which have the same problem as not having this relationship set in the first place.
+
+2. Some attributes are best as derived attributes.  Common comments include approval status of a booking.  It can be derived by checking an approval relationship set (or something similar).
+
+3. There can be problems with adding entity/relationship sets that are intended to simplify queries:
+  a) Assuming only the functions described in the project are allowed to be called, how to update these additional elements automatically?  For instance, use of "fever" attribute to ban someone from booking/attending meetings.  When is this "fever" resets?
+  b) How to ensure consistency of the underlying data?  Typically, the fewer tables the easier it is to maintain consistency.
+  Now, why is this a minor comment?  Seems major.  This is because you can do that if you want, but make sure the underlying table will ensure consistency across all different usages in any combinations in your final deliverables.
+
+4. The use of end hour for a key (or partial key) of booking (or something similar) means that this is no longer a 1-hour block.  This is fine, but just note that it can be rather complicated when the approval is not for the entire duration.  For instance, booking from 10 to 12 but only approved for 10 to 11.  In such cases, be prepared to split the entries.
+
+5. The ER diagram should be of a good size.  The size of the smallest font on the ER diagram should be as large as the font on the report.  Do not save space by having smaller ER diagram.
+
+
+
+
+Common Major Comments:
+1. Booking becomes a ternary relationship set connecting senior, manager and rooms (or something similar to rooms, like session).  This ternary relationship set does not mean that either senior or manager can book a room.  Instead, it means that BOTH senior and manager are needed to book a room.  A simple solution is a two-level ISA in proposed ER diagram.
+
+2. Booking with its own (non-partial) key.  The problem with this design is that a meeting room can then be booked at the same date/time by different people (in some cases, both can be approved) as long as it has different booking ID.  In principle, adding unnecessary ID as key may lead to this problem.
+  Another common entity set with this problem is the health declaration, but it is less severe here since it's probably ok to make several health declaration in a single day.  It will complicate the contact tracing though...  So be careful with that.
+  This can actually be solved by making either:
+  a) Booking as a weak entity set, or
+  b) Booking as a relationship set (then make it an aggregate if needed)
+
+3. Participants (or something similar) as a multi-valued attributes.  This loses the nice property that the participant is really an actual valid employee that must exists in another entity set (usually called [Employee]).  Although checking this can be done externally (e.g., via foreign key constraint not reflected in ER diagram), it can actually be reflected in ER diagram by simply adding a relationship set between employee and booking (in fact, that's one way we implement a multi-valued attribute).
+  Note that in the lecture notes, the example is phone number.  Which is more appropriate because we probably would not check if a number is a valid phone number by foreign key to a table containing all valid phone numbers (or not even checking if it is valid).  On the other hand, we want to check if a participant is a valid participant by means of foreign key.
+  Foreign key is reflected in ER diagram by (1) relationship set and (2) ISA relationship.
+
+4. If an approval of meeting uses attributes on booking (or something similar) rather than a relationship set, it loses information of whether the approver is a manager or not.  Why is this major and not the change of capacity?  I am still quite split on this, but since the theme is about meeting room booking, the central part of the functionality lies on the booking and not the capacity.  So, making the central functionality works is more important especially if we wish to make a minimum viable product (MVP).
+
+5. Resigned employee as a sub-entity set of employees poses a problem of deletion of data depending on whether overlap constraint is satisfied or not.  If it is, then the data from other sub-entity set must be deleted and moved to the resigned employee data.  Which means, relationship sets that depends on that value being on non-resigned employee data can no longer use the value.  The solution is simply to make resignation a nullable attribute of employees.  This technique is called "soft-delete".

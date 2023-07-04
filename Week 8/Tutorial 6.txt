@@ -1,0 +1,151 @@
+Tutorial 6
+
+CREATE TABLE Exams (
+  sid INT,
+  cid INT,
+  score INT,
+  PRIMARY KEY (sid, cid)
+);
+
+INSERT INTO Exams
+VALUES (1, 101, 100),
+(1, 102, 100),
+(1, 103, 100),
+(2, 101, 90),
+(2, 102, 80),
+(3, 101, 80);
+
+1.
+
+CREATE OR REPLACE FUNCTION max_min (IN stu_id INT , OUT max_cid INT , OUT min_cid INT )
+RETURNS RECORD AS $$
+DECLARE
+max_score INT;
+min_score INT;
+BEGIN
+
+SELECT MAX(score), MIN(score) INTO max_score, min_score FROM Exams WHERE sid = stu_id;
+SELECT cid INTO max_cid FROM Exams WHERE score = max_score AND sid = stu_id;
+SELECT cid INTO min_cid FROM Exams WHERE score = min_score AND sid = stu_id;
+
+IF min_score = max_score THEN min_cid := NULL;
+END IF;
+RETURN;
+
+END;
+$$ LANGUAGE plpgsql;
+
+2.
+
+CREATE OR REPLACE FUNCTION revised_avg (IN stu_id INT, OUT r_avg FLOAT)
+RETURNS FLOAT AS $$
+DECLARE
+total FLOAT;
+num_records INT;
+max_score INT;
+min_score INT;
+BEGIN
+
+SELECT SUM(score), COUNT(DISTINCT cid) INTO total, num_records
+FROM Exams
+GROUP BY sid
+HAVING sid = stu_id;
+
+SELECT MAX(score), MIN(score) INTO max_score, min_score FROM Exams WHERE sid = stu_id;
+
+IF num_records < 3 THEN r_avg := NULL;
+ELSE r_avg := CAST ((total - max_score - min_score) AS FLOAT)/(num_records - 2);
+END IF;
+RETURN;
+END;
+
+$$ LANGUAGE plpgsql;
+
+SELECT sid, revised_avg(sid)
+FROM Exams
+GROUP BY sid;
+
+3. ***NEED ADD ONE MORE RETURN NEXT AFTER EXIT LOOP TO CATCH LAST SID***
+
+CREATE OR REPLACE FUNCTION list_r_avg ()
+RETURNS TABLE (stu_id INT, ravg FLOAT) AS $$
+DECLARE
+curs CURSOR FOR (SELECT sid, score FROM Exams ORDER BY sid);
+r1 RECORD;
+current_sid INT := -1;
+total INT := 0;
+highest INT := -1;
+lowest INT := 101;
+num_records INT := 0;
+BEGIN
+OPEN curs;
+LOOP
+FETCH curs INTO r1; EXIT WHEN NOT FOUND;
+IF current_sid = -1 THEN current_sid := r1.sid;
+END IF;
+IF r1.sid <> current_sid THEN
+IF num_records < 3 THEN stu_id := current_sid; ravg := NULL;
+RETURN NEXT;
+ELSIF num_records >= 3 THEN stu_id := current_sid; ravg := CAST((total - highest - lowest) AS FLOAT)/(num_records - 2);
+RETURN NEXT;
+END IF;
+total := 0;
+highest := -1;
+lowest := 101;
+num_records := 0;
+current_sid = r1.sid;
+ELSE 
+total := total + r1.score;
+num_records := num_records + 1;
+IF r1.score > highest THEN highest := r1.score;
+ELSIF r1.score < lowest THEN lowest := r1.score;
+END IF;
+END IF;
+END LOOP;
+IF num_records < 3 THEN stu_id := current_sid; ravg := NULL;
+RETURN NEXT;
+ELSIF num_records >= 3 THEN stu_id := current_sid; ravg := CAST((total - highest - lowest) AS FLOAT)/(num_records - 2);
+RETURN NEXT;
+END IF;
+CLOSE curs;
+
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT * FROM list_r_avg();
+
+4.
+
+
+CREATE OR REPLACE FUNCTION list_scnd_highest ()
+RETURNS TABLE (stu_id INT, scnd_highest INT) AS $$
+DECLARE
+BEGIN
+
+SELECT e5.sid, e5.score INTO stu_id, scnd_highest
+FROM(
+SELECT e2.sid AS sid, MAX(e2.score) AS score
+FROM
+(SELECT sid, score
+FROM Exams
+EXCEPT
+SELECT sid, MAX(score)
+FROM Exams
+GROUP BY sid) AS e2
+GROUP BY e2.sid
+UNION
+SELECT e.sid AS sid, NULL AS score
+FROM Exams e
+GROUP BY e.sid
+HAVING COUNT(*) = 1) AS e5;
+
+RETURN QUERY SELECT stu_id, scnd_highest;
+
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
